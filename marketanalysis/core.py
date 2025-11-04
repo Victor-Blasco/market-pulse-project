@@ -12,10 +12,10 @@ class MarketAnalyzer:
         results (pd.DataFrame): DataFrame to store analysis results.
     """
 
-    def __init__(self, name: str, stocks: List[Stock]):
+    def __init__(self, name: str):
         """Initializes the MarketAnalyzer with a name and a list of Stock objects."""
         self.name = name
-        self.stocks = stocks
+        self.stocks : List[Stock] = []
         self.results = pd.DataFrame()
     
     def add_stock(self, stock: Stock):
@@ -24,6 +24,48 @@ class MarketAnalyzer:
 
     def fetch_data(self, start_date: str, end_date: str):
         """Fetches historical data for all stocks in the analyzer."""
+        try:
+            all_data = yf.download(
+                tickers=[stock.ticker for stock in self.stocks],
+                start=start_date,
+                end=end_date,
+                group_by='ticker'
+            )
+            for stock in self.stocks:
+                stock.data = all_data[stock.ticker].dropna()
+        except Exception as e:
+            print(f"Error fetching data: {e}")
+    
+    def analyze_moving_averages(self, window: int):
+        """Analyzes moving averages for all stocks and stores results."""
+        analysis_results = []
         for stock in self.stocks:
-            data = yf.download(stock.ticker, start=start_date, end=end_date)
-            stock.data = data
+            try:
+                ma_series = stock.get_moving_average(window)
+                latest_ma = ma_series.iloc[-1] if ma_series is not None else np.nan
+                analysis_results.append({
+                    'Ticker': stock.ticker,
+                    'Sector': stock.sector,
+                    f'MA_{window}': latest_ma
+                })
+            except ValueError as ve:
+                print(f"Skipping {stock.ticker}: {ve}")
+        
+        self.results = pd.DataFrame(analysis_results)
+    
+    def get_results(self) -> pd.DataFrame:
+        """Returns the analysis results."""
+        return self.results
+    
+    def save_results(self, filepath: str):
+        """Saves the analysis results to a CSV file."""
+        self.results.to_csv(filepath, index=False)
+    
+    def load_results(self, filepath: str):
+        """Loads analysis results from a CSV file."""
+        self.results = pd.read_csv(filepath)
+    
+    def summarize(self) -> pd.DataFrame:
+        """Provides a summary of the analysis results."""
+        return self.results.describe()
+    
