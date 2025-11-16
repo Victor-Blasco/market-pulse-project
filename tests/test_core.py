@@ -99,3 +99,40 @@ def test_summarize(sample_analyzer):
     summary = sample_analyzer.summarize()
     assert isinstance(summary, pd.DataFrame)
     assert 'MA_3' in summary.columns
+
+
+def test_calculate_daily_returns(sample_analyzer, mock_stock_data):
+    """Tests that daily returns are calculated correctly."""
+    # Set up the test data
+    sample_analyzer.stocks[0].data = mock_stock_data['AAPL']
+    sample_analyzer.stocks[1].data = mock_stock_data['MSFT']
+
+    sample_analyzer.calculate_daily_returns()
+    
+    aapl_returns = sample_analyzer.stocks[0].data['daily_return'].dropna()
+    expected_returns = mock_stock_data['AAPL']['Close'].pct_change().dropna()
+
+    assert np.isclose(aapl_returns.values, expected_returns.values).all(), f"Expected {expected_returns.values}, got {aapl_returns.values}"
+
+
+
+def test_calculate_volatility(sample_analyzer, mock_stock_data):
+    """Tests that volatility (std deviation of daily returns) is calculated correctly."""
+    # Set up the test data
+    sample_analyzer.stocks[0].data = mock_stock_data['AAPL']
+    sample_analyzer.stocks[1].data = mock_stock_data['MSFT']
+
+    sample_analyzer.calculate_daily_returns()
+    
+    aapl_returns = sample_analyzer.stocks[0].data['daily_return'].dropna()
+
+    expected_vol_aapl = np.std(aapl_returns)
+
+    volatilities = sample_analyzer.calculate_volatility()
+    
+    assert isinstance(volatilities, pd.Series)
+    assert 'AAPL' in volatilities.index
+    
+    
+    print(f"AAPL Volatility: {volatilities['AAPL']}, Expected: {expected_vol_aapl}")
+    assert np.isclose(volatilities['AAPL'], expected_vol_aapl)

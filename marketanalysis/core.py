@@ -69,3 +69,22 @@ class MarketAnalyzer:
         """Provides a summary of the analysis results."""
         return self.results.describe()
     
+    def calculate_daily_returns(self):
+        """Calculates daily returns for all stocks."""
+        for stock in self.stocks:
+            if not stock.data.empty:
+                stock.data['daily_return'] = stock.data['Close'].pct_change()
+
+    def calculate_volatility(self) -> pd.Series | None:
+        """Calculates volatility (standard deviation of daily returns) for all stocks."""
+        volatility_results = {}
+        for stock in self.stocks:
+            if 'daily_return' in stock.data.columns:
+                volatility = np.std(stock.data['daily_return'].dropna())
+                volatility_results[stock.ticker] = volatility
+            else:
+                print(f"Daily returns not calculated for {stock.ticker}. Skipping volatility calculation.")
+        
+        if volatility_results:
+            return pd.Series(volatility_results, name='Volatility')
+        return None
