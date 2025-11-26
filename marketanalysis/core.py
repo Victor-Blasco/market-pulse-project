@@ -88,3 +88,17 @@ class MarketAnalyzer:
         if volatility_results:
             return pd.Series(volatility_results, name='Volatility')
         return None
+
+    def get_correlation_matrix(self) -> pd.DataFrame | None:
+        """Calculates the correlation matrix of daily returns for all stocks."""
+        returns_data = {}
+        for stock in self.stocks:
+            if 'daily_return' in stock.data.columns:
+                returns_data[stock.ticker] = stock.data['daily_return']
+            else:
+                print(f"Daily returns not calculated for {stock.ticker}. Skipping correlation calculation.")
+        
+        if returns_data:
+            returns_df = pd.DataFrame(returns_data)
+            return returns_df.corr()
+        return None

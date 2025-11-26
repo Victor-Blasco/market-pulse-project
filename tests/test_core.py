@@ -136,3 +136,22 @@ def test_calculate_volatility(sample_analyzer, mock_stock_data):
     
     print(f"AAPL Volatility: {volatilities['AAPL']}, Expected: {expected_vol_aapl}")
     assert np.isclose(volatilities['AAPL'], expected_vol_aapl)
+
+def test_get_correlation_matrix(sample_analyzer, mock_stock_data):
+    """Tests the calculation of the correlation matrix of daily returns."""
+    # Set up the test data
+    sample_analyzer.stocks[0].data = mock_stock_data['AAPL']
+    sample_analyzer.stocks[1].data = mock_stock_data['MSFT']
+
+    sample_analyzer.calculate_daily_returns()
+    
+    returns_data = {
+        stock.ticker: stock.data['daily_return'] for stock in sample_analyzer.stocks
+    }
+    returns_df = pd.DataFrame(returns_data)
+
+    expected_corr = returns_df.corr()
+
+    corr_matrix = sample_analyzer.get_correlation_matrix()
+    
+    pd.testing.assert_frame_equal(corr_matrix, expected_corr)
